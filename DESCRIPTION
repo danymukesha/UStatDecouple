@@ -19,7 +19,7 @@ Roxygen: list(markdown = TRUE)
 URL: https://danymukesha.github.io/UStatDecouple/
 BugReports: https://github.com/danymukesha/UStatDecouple/issues
 Imports: 
-    Rcpp
+    Rcpp,
     BiocParallel
 Suggests: 
     knitr,
