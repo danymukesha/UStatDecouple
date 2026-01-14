@@ -127,8 +127,8 @@ expr_result <- analyze_gene_expression_correlations(
 )
 #> 
 #> === Gene Expression Analysis ===
-#> Original mean absolute correlation: 0.2249
-#> Expected correlation under independence: 0.2538
+#> Original mean absolute correlation: 0.2246
+#> Expected correlation under independence: 0.2527
 #> Variance inflation factor: Inf
 #> No significant evidence of co-expression structure (p >= 0.05)
 #> Genes appear to be expressed independently

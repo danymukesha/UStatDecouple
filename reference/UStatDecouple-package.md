@@ -12,6 +12,14 @@ independent sequences. It provides tools for genomic data analysis
 including variance estimation, hypothesis testing, and confidence
 interval construction for complex genomic metrics.
 
+## See also
+
+Useful links:
+
+- <https://danymukesha.github.io/UStatDecouple/>
+
+- Report bugs at <https://github.com/danymukesha/UStatDecouple/issues>
+
 ## Author
 
 **Maintainer**: Dany Mukesha <danymukesha@gmail.com>
