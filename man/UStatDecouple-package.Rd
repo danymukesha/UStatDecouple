@@ -13,6 +13,14 @@ transforming dependent sample statistics into averages of independent sequences.
 It provides tools for genomic data analysis including variance estimation,
 hypothesis testing, and confidence interval construction for complex genomic metrics.
 }
+\seealso{
+Useful links:
+\itemize{
+  \item \url{https://danymukesha.github.io/UStatDecouple/}
+  \item Report bugs at \url{https://github.com/danymukesha/UStatDecouple/issues}
+}
+
+}
 \author{
 \strong{Maintainer}: Dany Mukesha \email{danymukesha@gmail.com} (\href{https://orcid.org/0009-0001-9514-751X}{ORCID})
 

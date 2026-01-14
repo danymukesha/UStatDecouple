@@ -40,7 +40,7 @@ devtools::install_github("danymukesha/UStatDecouple")
 
 ## Quick Start
 
-Rerforming decoupled U-statistic analysis on DNA sequence data. It
+Performing decoupled U-statistic analysis on DNA sequence data. It
 allows to compute kernel-based distances, estimate distributions, and
 visualize results efficiently.
 
