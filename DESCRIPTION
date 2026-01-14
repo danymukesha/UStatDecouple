@@ -20,7 +20,8 @@ URL: https://danymukesha.github.io/UStatDecouple/
 BugReports: https://github.com/danymukesha/UStatDecouple/issues
 Imports: 
     Rcpp,
-    BiocParallel
+    BiocParallel,
+    BiocStyle
 Suggests: 
     knitr,
     rmarkdown
