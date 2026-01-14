@@ -1,0 +1,26 @@
+Package: UStatDecouple
+Type: Package
+Title: Probabilistic Decoupling for U-Statistics in Genomic Analysis
+Version: 0.99.0
+Authors@R: 
+    person("Dany", "Mukesha", , "danymukesha@gmail.com", 
+            role = c("aut", "cre"),
+           comment = c(ORCID = "0009-0001-9514-751X"))
+Description: Decoupling techniques for U-statistics to transform
+    dependent sample statistics into averages of independent sequences, 
+    specifically optimized for genomic data analysis. Provides tools for 
+    variance estimation, hypothesis testing, and confidence interval 
+    construction for complex genomic metrics.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
+Roxygen: list(markdown = TRUE)
+LinkingTo: 
+    Rcpp
+Imports: 
+    Rcpp
+Suggests: 
+    knitr,
+    rmarkdown
+VignetteBuilder: knitr
