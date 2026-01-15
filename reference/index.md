@@ -20,7 +20,7 @@
   : Hello, World!
 - [`load_example_sequences()`](https://danymukesha.github.io/UStatDecouple/reference/load_example_sequences.md)
   : Load Example DNA Sequences
-- [`plot(`*`<DecoupleResult>`*`,`*`<ANY>`*`)`](https://danymukesha.github.io/UStatDecouple/reference/plot-DecoupleResult-ANY-method.md)
+- [`plot(`*`<DecoupleResult>`*`)`](https://danymukesha.github.io/UStatDecouple/reference/plot-DecoupleResult-method.md)
   : Plot DecoupleResult
 - [`run_genomic_case_study()`](https://danymukesha.github.io/UStatDecouple/reference/run_genomic_case_study.md)
   : Run Genomic Case Study: DNA Sequence Diversity

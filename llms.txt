@@ -150,7 +150,7 @@ The C++ implementation provides significant speed improvements:
   : Hello, World!
 - [`load_example_sequences()`](https://danymukesha.github.io/UStatDecouple/reference/load_example_sequences.md)
   : Load Example DNA Sequences
-- [`plot(`*`<DecoupleResult>`*`,`*`<ANY>`*`)`](https://danymukesha.github.io/UStatDecouple/reference/plot-DecoupleResult-ANY-method.md)
+- [`plot(`*`<DecoupleResult>`*`)`](https://danymukesha.github.io/UStatDecouple/reference/plot-DecoupleResult-method.md)
   : Plot DecoupleResult
 - [`run_genomic_case_study()`](https://danymukesha.github.io/UStatDecouple/reference/run_genomic_case_study.md)
   : Run Genomic Case Study: DNA Sequence Diversity
@@ -163,5 +163,9 @@ The C++ implementation provides significant speed improvements:
 
 ### All vignettes
 
+- [Getting Started with
+  UStatDecouple](https://danymukesha.github.io/UStatDecouple/articles/getting-started.md):
+- [Real-World Data Analysis with
+  UStatDecouple](https://danymukesha.github.io/UStatDecouple/articles/real-world-analysis.md):
 - [UStatDecouple: Probabilistic Decoupling for U-Statistics in Genomic
   Analysis](https://danymukesha.github.io/UStatDecouple/articles/UStatDecouple.md):

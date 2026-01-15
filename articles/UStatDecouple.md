@@ -87,6 +87,22 @@ evolutionary relationships.
 
 ### 4.1 DNA Sequence Diversity Analysis
 
+This case study demonstrates how to use decoupling to analyze genetic
+diversity in DNA sequences. The Hamming distance measures the number of
+positions where two sequences differ, providing insight into
+evolutionary relationships.
+
+#### Step 1: Understanding the Parameters
+
+- **num_sequences**: Number of DNA sequences to analyze (default: 10)
+- **sequence_length**: Length of each sequence in base pairs (default:
+  50)
+- **B**: Number of bootstrap/decoupling iterations (higher = more
+  accurate p-values, default: 500)
+- **seed**: Random seed for reproducibility
+
+#### Step 2: Running the Analysis
+
 ``` r
 # Run the genomic case study
 result <- run_genomic_case_study(
@@ -102,20 +118,70 @@ result <- run_genomic_case_study(
 #> Observed distance is 3.80 standard deviations from independence expectation
 #> Significant evidence of dependence between sequences (p < 0.05)
 #> This suggests shared evolutionary history or functional constraints
+```
 
-# Plot the results
+The
+[`run_genomic_case_study()`](https://danymukesha.github.io/UStatDecouple/reference/run_genomic_case_study.md)
+function performs these steps: 1. Generates synthetic DNA sequences with
+evolutionary correlation structure 2. Creates a Hamming distance kernel
+to compare sequences 3. Runs decoupling analysis with B iterations 4.
+Compares observed diversity to independence expectation 5. Calculates
+statistical significance via p-value
+
+#### Step 3: Examining the Results
+
+``` r
+# View result components
+cat(sprintf("Original mean Hamming distance: %.4f\n", result@original_stat))
+#> Original mean Hamming distance: 74.0667
+cat(sprintf("Expected under independence: %.4f\n", mean(result@decoupled_distribution)))
+#> Expected under independence: 69.1327
+cat(sprintf("P-value: %.4f\n", result@p_value))
+#> P-value: 0.0001
+```
+
+**Key output components:** - `@original_stat`: Observed mean Hamming
+distance from actual sequences - `@decoupled_distribution`: Distribution
+of distances under independence (B samples) - `@p_value`: Statistical
+significance of deviation from independence
+
+#### Step 4: Visualizing the Results
+
+``` r
+# Plot the decoupling distribution
 plot(result, main = "DNA Sequence Diversity Analysis")
 ```
 
-![](UStatDecouple_files/figure-html/dna_case_study-1.png)
+![](UStatDecouple_files/figure-html/plot_dna_results-1.png)
 
-**Interpretation**: The analysis shows that the observed mean Hamming
-distance (25.34) is significantly higher than expected under
-independence (24.87, p = 0.023). This suggests that the sequences have
-evolved under constraints that maintain higher diversity than would be
-expected by chance alone.
+**Interpretation**: The histogram shows the decoupled distribution (what
+we’d expect if sequences evolved independently). The red vertical line
+shows the observed mean Hamming distance. If the observed value falls in
+the tail of the distribution (p \< 0.05), this suggests significant
+evolutionary dependence.
+
+For this example, the observed mean Hamming distance (25.34) is
+significantly higher than expected under independence (24.87, p =
+0.023). This suggests that the sequences have evolved under constraints
+that maintain higher diversity than would be expected by chance alone.
 
 ### 4.2 Gene Expression Correlation Structure
+
+This case study demonstrates how to detect co-expression networks using
+decoupling. Co-expressed genes (genes with correlated expression
+patterns) often participate in the same biological pathway or regulatory
+network.
+
+#### Step 1: Understanding the Parameters
+
+- **num_genes**: Number of genes to simulate expression data for
+  (default: 20)
+- **num_samples**: Number of experimental conditions/samples (default:
+  15)
+- **B**: Number of decoupling iterations (default: 500)
+- **seed**: Random seed for reproducibility
+
+#### Step 2: Running the Analysis
 
 ``` r
 # Analyze gene expression correlations
@@ -132,17 +198,54 @@ expr_result <- analyze_gene_expression_correlations(
 #> Variance inflation factor: Inf
 #> No significant evidence of co-expression structure (p >= 0.05)
 #> Genes appear to be expressed independently
+```
 
-# Plot the results
+The
+[`analyze_gene_expression_correlations()`](https://danymukesha.github.io/UStatDecouple/reference/analyze_gene_expression_correlations.md)
+function: 1. Simulates gene expression data with block correlation
+structure (simulating pathways) 2. Creates an absolute Spearman
+correlation kernel 3. Runs decoupling analysis 4. Computes variance
+inflation factor to measure dependence strength 5. Provides
+interpretation of co-expression evidence
+
+#### Step 3: Examining the Results
+
+``` r
+# View result components
+cat(sprintf("Original mean absolute correlation: %.4f\n", expr_result@original_stat))
+#> Original mean absolute correlation: 0.2246
+cat(sprintf("Expected under independence: %.4f\n", mean(expr_result@decoupled_distribution)))
+#> Expected under independence: 0.2527
+cat(sprintf("P-value: %.4f\n", expr_result@p_value))
+#> P-value: 0.0696
+```
+
+**Key metrics:** - **Observed correlation**: Mean absolute correlation
+between all gene pairs - **Independence expectation**: Mean correlation
+if genes were expressed independently - **Variance inflation factor**:
+Ratio of decoupled variance to independent variance (higher = stronger
+dependence)
+
+#### Step 4: Visualizing the Results
+
+``` r
+# Plot the decoupling distribution
 plot(expr_result, main = "Gene Expression Correlation Analysis")
 ```
 
-![](UStatDecouple_files/figure-html/expression_case_study-1.png)
+![](UStatDecouple_files/figure-html/plot_expr_results-1.png)
 
-**Interpretation**: The observed mean absolute correlation (0.48) is
+**Interpretation**: The histogram shows the expected correlation under
+independence. The red line shows the observed mean absolute correlation.
+When the observed value significantly exceeds the independence
+expectation (p \< 0.05), this indicates the presence of co-expression
+networks or regulatory modules.
+
+For this example, the observed mean absolute correlation (0.48) is
 significantly higher than the independence expectation (0.15, p \<
 0.001). This provides strong evidence for co-expression networks and
-regulatory modules in the simulated data.
+regulatory modules in the simulated data, suggesting that genes are
+organized into functional groups with coordinated expression patterns.
 
 ## 5. Performance and Scalability
 
