@@ -1,0 +1,466 @@
+---
+title: "Real-World Data Analysis with UStatDecouple"
+author: "Dany Mukesha"
+date: "`r Sys.Date()`"
+package: "UStatDecouple"
+abstract: |
+  This vignette demonstrates how to use UStatDecouple with real genomic data
+  from Bioconductor packages, including DNA sequences and gene expression datasets.
+output: 
+  BiocStyle::html_document:
+    toc: true
+    toc_depth: 3
+vignette: >
+  %\VignetteIndexEntry{Real-World Data Analysis with UStatDecouple}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.width = 8,
+  fig.height = 6,
+  dpi = 150,
+  eval = FALSE
+)
+library(UStatDecouple)
+```
+
+## 1. Introduction
+
+This vignette shows practical applications of UStatDecouple using real-world biological datasets from Bioconductor. We'll analyze:
+
+1. **DNA sequences** from the `BSgenome` package
+2. **Gene expression data** from the `Biobase` package
+3. **Genomic regions** from the `GenomicRanges` package
+
+## 2. Example 1: Analyzing DNA Sequence Diversity
+
+### 2.1 Loading Real DNA Sequences
+
+We'll use the `BSgenome.Hsapiens.UCSC.hg19` package to load human reference genome sequences.
+
+```{r load_genome}
+# Install required packages if not already installed
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(c("BSgenome.Hsapiens.UCSC.hg19", "GenomicFeatures"))
+
+# Load packages
+library(BSgenome.Hsapiens.UCSC.hg19)
+library(GenomicFeatures)
+
+# Get gene annotations
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+
+# Extract promoter regions (upstream of transcription start sites)
+promoters <- promoters(genes(txdb), upstream = 500, downstream = 100)
+
+# Get sequences for 50 randomly selected promoters
+set.seed(42)
+promoter_idx <- sample(1:length(promoters), 50)
+selected_promoters <- promoters[promoter_idx]
+
+# Extract DNA sequences
+library(Biostrings)
+promoter_sequences <- getSeq(BSgenome.Hsapiens.UCSC.hg19, selected_promoters)
+
+# Convert to list format (required by UStatDecouple)
+seq_list <- lapply(1:length(promoter_sequences), function(i) {
+  as.character(promoter_sequences[[i]])
+})
+
+# Clean sequence names
+names(seq_list) <- paste0("Promoter_", 1:length(seq_list))
+
+cat(sprintf("Loaded %d promoter sequences\n", length(seq_list)))
+cat(sprintf("Sequence length: %d bp\n", length(seq_list[[1]])))
+cat(sprintf("First sequence (first 50 bp): %s...\n", substr(seq_list[[1]], 1, 50)))
+```
+
+### 2.2 Running Decoupling Analysis on Real DNA
+
+Now we'll analyze whether these promoter regions have similar nucleotide composition patterns, which could indicate shared regulatory mechanisms.
+
+```{r dna_analysis}
+# Create Hamming distance kernel
+kernel <- create_kernel(hamming_distance_kernel, "Hamming Distance")
+
+# Run decoupling analysis
+set.seed(123)
+result <- decouple_u_stat(
+  x = seq_list,
+  kernel = kernel,
+  B = 500,
+  seed = 123
+)
+
+# Print results
+cat("=== DNA Promoter Analysis Results ===\n")
+cat(sprintf("Observed mean Hamming distance: %.2f bp\n", result@original_stat))
+cat(sprintf("Expected under independence: %.2f bp\n", mean(result@decoupled_distribution)))
+cat(sprintf("P-value: %.4f\n", result@p_value))
+```
+
+### 2.3 Interpreting the Results
+
+```{r dna_interpretation}
+# Plot the results
+plot(result, main = "DNA Promoter Diversity Analysis")
+
+# Calculate additional statistics
+divergence <- (result@original_stat - mean(result@decoupled_distribution)) / 
+              sd(result@decoupled_distribution)
+
+cat("\n=== Biological Interpretation ===\n")
+if (result@p_value < 0.05) {
+  cat("Significant evidence of nucleotide similarity among promoters (p < 0.05)\n")
+  cat("This may indicate:\n")
+  cat("  - Shared transcription factor binding motifs\n")
+  cat("  - CpG island enrichment\n")
+  cat("  - Evolutionary conservation in regulatory regions\n")
+} else {
+  cat("No significant evidence of nucleotide similarity (p >= 0.05)\n")
+  cat("Promoters appear to have diverse nucleotide compositions,\n")
+  cat("suggesting varied regulatory mechanisms across genes.\n")
+}
+```
+
+## 3. Example 2: Gene Expression Co-Expression Analysis
+
+### 3.1 Loading Real Gene Expression Data
+
+We'll use the `ALL` dataset from the `ALL` package, which contains gene expression data from acute lymphoblastic leukemia patients.
+
+```{r load_expression}
+# Install required packages
+BiocManager::install("ALL")
+
+# Load packages
+library(ALL)
+library(Biobase)
+
+# Load the ALL dataset
+data(ALL)
+
+# Subset to a manageable size
+# Select 50 genes with highest variance
+expr_matrix <- exprs(ALL)
+gene_vars <- apply(expr_matrix, 1, var)
+top_var_idx <- order(gene_vars, decreasing = TRUE)[1:50]
+expr_subset <- expr_matrix[top_var_idx, ]
+
+# Convert to list format (rows = genes, columns = samples)
+gene_profiles <- split(expr_subset, row(expr_subset))
+
+# Clean up names
+names(gene_profiles) <- paste0("Gene_", 1:length(gene_profiles))
+
+cat(sprintf("Loaded expression profiles for %d genes\n", length(gene_profiles)))
+cat(sprintf("Number of samples: %d\n", ncol(expr_subset)))
+cat(sprintf("First few genes: %s\n", paste(names(gene_profiles)[1:5], collapse = ", ")))
+```
+
+### 3.2 Running Decoupling Analysis on Real Expression Data
+
+We'll analyze whether genes show co-expression patterns, indicating potential functional relationships or co-regulation.
+
+```{r expression_analysis}
+# Create correlation kernel for expression data
+expr_kernel <- create_kernel(
+  gene_expression_correlation_kernel,
+  "Absolute Spearman Correlation"
+)
+
+# Run decoupling analysis
+set.seed(123)
+expr_result <- decouple_u_stat(
+  x = gene_profiles,
+  kernel = expr_kernel,
+  B = 500,
+  seed = 123
+)
+
+# Print results
+cat("=== Gene Expression Analysis Results ===\n")
+cat(sprintf("Observed mean absolute correlation: %.4f\n", expr_result@original_stat))
+cat(sprintf("Expected under independence: %.4f\n", mean(expr_result@decoupled_distribution)))
+cat(sprintf("P-value: %.4f\n", expr_result@p_value))
+```
+
+### 3.3 Interpreting the Results
+
+```{r expression_interpretation}
+# Plot the results
+plot(expr_result, main = "Gene Expression Co-Expression Analysis")
+
+# Calculate variance inflation factor
+vif <- var(expr_result@decoupled_distribution) / 
+       var(rep(expr_result@original_stat, 500))
+
+cat("\n=== Biological Interpretation ===\n")
+if (expr_result@p_value < 0.05) {
+  cat("Significant evidence of co-expression (p < 0.05)\n")
+  cat(sprintf("Variance inflation factor: %.2f\n", vif))
+  cat("\nThis suggests:\n")
+  cat("  - Genes may be organized into co-expression modules\n")
+  cat("  - Shared transcriptional regulation across gene sets\n")
+  cat("  - Potential functional relationships among genes\n")
+  cat("\nNext steps:\n")
+  cat("  - Perform clustering analysis to identify modules\n")
+  cat("  - Annotate modules with Gene Ontology terms\n")
+  cat("  - Validate key hub genes experimentally\n")
+} else {
+  cat("No significant evidence of co-expression (p >= 0.05)\n")
+  cat("Genes appear to be expressed independently.\n")
+  cat("This may indicate:\n")
+  cat("  - Heterogeneous patient population\n")
+  cat("  - Highly diverse biological processes\n")
+}
+```
+
+## 4. Example 3: Custom Analysis with Genomic Ranges
+
+### 4.1 Preparing Genomic Features
+
+We'll create a custom kernel to analyze the similarity of genomic features based on their overlap patterns.
+
+```{r genomic_ranges}
+# Load required packages
+BiocManager::install("GenomicRanges")
+library(GenomicRanges)
+
+# Load gene annotations
+txdb <- TxDb.Hsapiens.UCSC.hg19.knownGene
+genes_gr <- genes(txdb)
+
+# Extract genomic features for a subset of chromosomes
+autosomal_genes <- genes_gr[seqnames(genes_gr) %in% c("chr1", "chr2", "chr3")]
+
+# Select 30 genes for analysis
+set.seed(123)
+gene_idx <- sample(1:length(autosomal_genes), 30)
+selected_genes <- autosomal_genes[gene_idx]
+
+cat(sprintf("Selected %d genes for analysis\n", length(selected_genes)))
+```
+
+### 4.2 Creating a Custom Overlap Kernel
+
+We'll create a kernel that measures the similarity between genes based on their genomic context.
+
+```{r overlap_kernel}
+# Custom kernel: measures similarity based on chromosomal proximity
+proximity_kernel <- function(gr1, gr2) {
+  # Extract chromosome and positions
+  chr1 <- as.character(seqnames(gr1))
+  chr2 <- as.character(seqnames(gr2))
+  
+  start1 <- start(gr1)
+  end1 <- end(gr1)
+  start2 <- start(gr2)
+  end2 <- end(gr2)
+  
+  # Calculate similarity score
+  if (chr1 == chr2) {
+    # Same chromosome: similarity decreases with distance
+    midpoint1 <- (start1 + end1) / 2
+    midpoint2 <- (start2 + end2) / 2
+    distance <- abs(midpoint1 - midpoint2)
+    
+    # Normalized similarity (1 - distance / chromosome_length)
+    # Using a large constant for normalization
+    similarity <- exp(-distance / 1e6)  # Exponential decay
+  } else {
+    # Different chromosomes: lower similarity
+    similarity <- 0.1
+  }
+  
+  return(similarity)
+}
+
+# Convert to list format
+gene_list <- lapply(1:length(selected_genes), function(i) {
+  selected_genes[i]
+})
+names(gene_list) <- paste0("Gene_", 1:length(gene_list))
+```
+
+### 4.3 Running Decoupling Analysis
+
+```{r proximity_analysis}
+# Create kernel object
+proximity_kernel_obj <- create_kernel(proximity_kernel, "Genomic Proximity")
+
+# Run decoupling analysis
+set.seed(123)
+prox_result <- decouple_u_stat(
+  x = gene_list,
+  kernel = proximity_kernel_obj,
+  B = 500,
+  seed = 123
+)
+
+# Print results
+cat("=== Genomic Proximity Analysis Results ===\n")
+cat(sprintf("Observed mean proximity: %.4f\n", prox_result@original_stat))
+cat(sprintf("Expected under independence: %.4f\n", mean(prox_result@decoupled_distribution)))
+cat(sprintf("P-value: %.4f\n", prox_result@p_value))
+```
+
+### 4.4 Interpreting the Results
+
+```{r proximity_interpretation}
+# Plot the results
+plot(prox_result, main = "Genomic Proximity Analysis")
+
+cat("\n=== Biological Interpretation ===\n")
+if (prox_result@p_value < 0.05) {
+  cat("Significant evidence of genomic clustering (p < 0.05)\n")
+  cat("This may indicate:\n")
+  cat("  - Genes are organized in genomic neighborhoods\n")
+  cat("  - Presence of gene clusters or operon-like structures\n")
+  cat("  - Potential co-regulation through chromatin domains\n")
+} else {
+  cat("No significant evidence of genomic clustering (p >= 0.05)\n")
+  cat("Genes appear to be randomly distributed across the genome.\n")
+}
+```
+
+## 5. Comparative Analysis
+
+Let's compare the results across different types of genomic data:
+
+```{r comparison}
+# Create a summary table
+results_summary <- data.frame(
+  Analysis = c("DNA Diversity", "Gene Expression", "Genomic Proximity"),
+  Observed_Statistic = c(result@original_stat, expr_result@original_stat, prox_result@original_stat),
+  Expected_Mean = c(mean(result@decoupled_distribution), 
+                    mean(expr_result@decoupled_distribution),
+                    mean(prox_result@decoupled_distribution)),
+  P_Value = c(result@p_value, expr_result@p_value, prox_result@p_value)
+)
+
+print(results_summary)
+```
+
+## 6. Best Practices for Real-World Data
+
+### 6.1 Data Preprocessing
+
+```{r preprocessing_tips}
+# 1. Ensure consistent sequence lengths
+min_len <- min(sapply(seq_list, length))
+seq_list_normalized <- lapply(seq_list, function(seq) {
+  seq[1:min_len]  # Truncate to minimum length
+})
+
+# 2. Handle missing values in expression data
+expr_clean <- na.omit(expr_subset)
+
+# 3. Normalize expression data
+expr_normalized <- t(scale(t(expr_clean)))  # Z-score normalization
+```
+
+### 6.2 Choosing Appropriate B Values
+
+```{r b_value_selection}
+# For quick exploration
+quick_result <- decouple_u_stat(data, kernel, B = 100, seed = 123)
+
+# For publication-quality results
+final_result <- decouple_u_stat(data, kernel, B = 1000, seed = 123)
+
+# For large datasets with limited computational resources
+balanced_result <- decouple_u_stat(data, kernel, B = 500, seed = 123)
+```
+
+### 6.3 Multiple Testing Correction
+
+When analyzing multiple gene sets or genomic regions:
+
+```{r multiple_testing}
+# Analyze multiple gene sets
+gene_sets <- list(set1 = genes1, set2 = genes2, set3 = genes3)
+
+# Run decoupling on each set
+p_values <- sapply(gene_sets, function(gene_set) {
+  result <- decouple_u_stat(gene_set, kernel, B = 500, seed = 123)
+  result@p_value
+})
+
+# Apply multiple testing correction
+adjusted_p <- p.adjust(p_values, method = "BH")
+
+cat("Original P-values:", round(p_values, 4), "\n")
+cat("Adjusted P-values:", round(adjusted_p, 4), "\n")
+```
+
+## 7. Integration with Other Bioconductor Tools
+
+### 7.1 Visualizing Results with ggplot2
+
+```{r ggplot_integration}
+library(ggplot2)
+
+# Convert result to data frame for plotting
+plot_data <- data.frame(
+  statistic = expr_result@decoupled_distribution,
+  type = "Decoupled"
+)
+
+# Add observed statistic
+plot_data <- rbind(plot_data, data.frame(
+  statistic = expr_result@original_stat,
+  type = "Observed"
+))
+
+# Create density plot
+ggplot(plot_data, aes(x = statistic, fill = type)) +
+  geom_density(alpha = 0.5) +
+  geom_vline(xintercept = expr_result@original_stat, 
+             linetype = "dashed", color = "red") +
+  labs(title = "Gene Expression Co-Expression",
+       x = "Absolute Correlation",
+       y = "Density") +
+  theme_minimal()
+```
+
+### 7.2 Combining with Gene Set Enrichment
+
+```{r gsea_integration}
+# After identifying co-expression modules
+# Perform Gene Set Enrichment Analysis
+BiocManager::install(c("clusterProfiler", "org.Hs.eg.db"))
+library(clusterProfiler)
+library(org.Hs.eg.db)
+
+# Example: Enrichment for top correlated genes
+# (This is illustrative - actual implementation depends on your analysis)
+# enr <- enrichGO(gene = gene_list,
+#                 OrgDb = org.Hs.eg.db,
+#                 keyType = "ENTREZID",
+#                 ont = "BP",
+#                 pAdjustMethod = "BH")
+```
+
+## 8. Conclusion
+
+This vignette demonstrated how to apply UStatDecouple to real-world genomic data:
+
+1. **DNA sequences**: Analyzed promoter diversity to detect shared regulatory features
+2. **Gene expression**: Identified co-expression patterns in leukemia patients
+3. **Genomic features**: Examined spatial organization of genes across chromosomes
+
+Key takeaways:
+
+- Always preprocess data appropriately (normalize, handle missing values)
+- Choose kernels that reflect biologically relevant similarities
+- Adjust B values based on available computational resources
+- Consider multiple testing corrections for large-scale analyses
+- Integrate results with other Bioconductor tools for comprehensive biological interpretation
+
+For more theoretical background and simpler examples, see the "Getting Started with UStatDecouple" vignette.
